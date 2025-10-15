@@ -1,0 +1,81 @@
+pipeline {
+  agent any
+
+  environment {
+    REGISTRY = "docker.io"
+    ORG = "luiferfox"
+    BACKEND_IMG = "${REGISTRY}/${ORG}/luminav-backend"
+    FRONTEND_IMG = "${REGISTRY}/${ORG}/luminav-frontend"
+    VERSION = "${BUILD_NUMBER}"
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        echo '🔍 Clonando el código desde GitHub...'
+        checkout scm
+      }
+    }
+
+    stage('Backend: Test') {
+      steps {
+        dir('LuminAV_backend') {
+          echo '🧪 Ejecutando pruebas del backend (JUnit)...'
+          sh 'mvn -q clean test'
+        }
+      }
+      post {
+        always {
+          junit 'LuminAV_backend/target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('Frontend: Test (opcional)') {
+      steps {
+        dir('LuminAV_frontend') {
+          echo '🧪 Ejecutando pruebas del frontend (Vitest)...'
+          sh 'npm ci'
+          sh 'npm run test -- --run'
+        }
+      }
+    }
+
+    stage('Docker Login & Push') {
+      steps {
+        echo '🐳 Iniciando sesión en Docker Hub y subiendo imágenes existentes...'
+        withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+          sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+          sh 'docker tag luminav-backend:latest $BACKEND_IMG:$VERSION'
+          sh 'docker tag luminav-frontend:latest $FRONTEND_IMG:$VERSION'
+          sh 'docker push $BACKEND_IMG:$VERSION'
+          sh 'docker push $FRONTEND_IMG:$VERSION'
+        }
+      }
+    }
+
+    stage('Tag latest') {
+      steps {
+        echo '🏷️ Etiquetando como latest y empujando al registro...'
+        sh 'docker tag $BACKEND_IMG:$VERSION $BACKEND_IMG:latest'
+        sh 'docker tag $FRONTEND_IMG:$VERSION $FRONTEND_IMG:latest'
+        sh 'docker push $BACKEND_IMG:latest'
+        sh 'docker push $FRONTEND_IMG:latest'
+      }
+    }
+
+    stage('Deploy (opcional)') {
+      when { expression { return params.DEPLOY == true } }
+      steps {
+        echo '🚀 Desplegando aplicación (opcional)...'
+        // Aquí podrías usar ansible o kubectl si tu profe lo pide.
+      }
+    }
+  }
+
+  parameters {
+    booleanParam(name: 'DEPLOY', defaultValue: false, description: 'Desplegar automáticamente al finalizar el build')
+  }
+}
+
