@@ -22,7 +22,8 @@ pipeline {
       steps {
         dir('LuminAV_backend') {
           echo '🧪 Ejecutando pruebas del backend (JUnit)...'
-          sh 'mvn -q clean test'
+          // Ejecuta Maven en Windows
+          bat 'mvn -q clean test'
         }
       }
       post {
@@ -36,8 +37,9 @@ pipeline {
       steps {
         dir('LuminAV_frontend') {
           echo '🧪 Ejecutando pruebas del frontend (Vitest)...'
-          sh 'npm ci'
-          sh 'npm run test -- --run'
+          // Instalación y ejecución en Windows
+          bat 'npm ci'
+          bat 'npm run test -- --run'
         }
       }
     }
@@ -46,11 +48,14 @@ pipeline {
       steps {
         echo '🐳 Iniciando sesión en Docker Hub y subiendo imágenes existentes...'
         withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-          sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-          sh 'docker tag luminav-backend:latest $BACKEND_IMG:$VERSION'
-          sh 'docker tag luminav-frontend:latest $FRONTEND_IMG:$VERSION'
-          sh 'docker push $BACKEND_IMG:$VERSION'
-          sh 'docker push $FRONTEND_IMG:$VERSION'
+          // Login y push con PowerShell o CMD
+          bat """
+          echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+          docker tag luminav-backend:latest %BACKEND_IMG%:%VERSION%
+          docker tag luminav-frontend:latest %FRONTEND_IMG%:%VERSION%
+          docker push %BACKEND_IMG%:%VERSION%
+          docker push %FRONTEND_IMG%:%VERSION%
+          """
         }
       }
     }
@@ -58,10 +63,12 @@ pipeline {
     stage('Tag latest') {
       steps {
         echo '🏷️ Etiquetando como latest y empujando al registro...'
-        sh 'docker tag $BACKEND_IMG:$VERSION $BACKEND_IMG:latest'
-        sh 'docker tag $FRONTEND_IMG:$VERSION $FRONTEND_IMG:latest'
-        sh 'docker push $BACKEND_IMG:latest'
-        sh 'docker push $FRONTEND_IMG:latest'
+        bat """
+        docker tag %BACKEND_IMG%:%VERSION% %BACKEND_IMG%:latest
+        docker tag %FRONTEND_IMG%:%VERSION% %FRONTEND_IMG%:latest
+        docker push %BACKEND_IMG%:latest
+        docker push %FRONTEND_IMG%:latest
+        """
       }
     }
 
@@ -69,7 +76,7 @@ pipeline {
       when { expression { return params.DEPLOY == true } }
       steps {
         echo '🚀 Desplegando aplicación (opcional)...'
-        // Aquí podrías usar ansible o kubectl si tu profe lo pide.
+        // Aquí podrías usar Ansible, kubectl o scripts locales
       }
     }
   }
