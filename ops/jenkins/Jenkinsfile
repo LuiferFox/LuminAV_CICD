@@ -54,16 +54,20 @@ pipeline {
         echo '🐳 Iniciando sesión en Docker Hub, construyendo y subiendo imágenes...'
         withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
 
-          // Login a DockerHub
-          bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+          // 🔧 FIX para Windows — Login sin pipe
+          bat """
+          docker logout
+          docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+          """
 
-          // Construcción de imágenes backend y frontend
+          // Backend
           dir('LuminAV/LuminAV_backend') {
             echo '🛠️ Construyendo imagen del backend...'
             bat "docker build -t %BACKEND_IMG%:%VERSION% ."
             bat "docker push %BACKEND_IMG%:%VERSION%"
           }
 
+          // Frontend
           dir('LuminAV/LuminAV_frontend') {
             echo '🛠️ Construyendo imagen del frontend...'
             bat "docker build -t %FRONTEND_IMG%:%VERSION% ."
@@ -84,4 +88,20 @@ pipeline {
     }
 
     stage('Deploy (opcional)') {
-      when { expression { return params
+      when { expression { return params.DEPLOY == true } }
+      steps {
+        echo '🚀 Desplegando aplicación (opcional)...'
+        // Aquí podrías agregar comandos de despliegue (Ansible, Docker Compose, K8s, etc.)
+      }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ Pipeline completado exitosamente. Imágenes subidas a Docker Hub.'
+    }
+    failure {
+      echo '❌ Error en el pipeline. Revisa los logs de Jenkins.'
+    }
+  }
+}
