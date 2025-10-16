@@ -24,7 +24,7 @@ pipeline {
 
     stage('Backend: Test') {
       steps {
-        dir('LuminAV/LuminAVbackend') {
+        dir('LuminAVbackend') {
           echo '🧪 Ejecutando pruebas del backend (JUnit)...'
           // Limpia, compila y prueba usando el POM
           bat 'mvn -B -q clean test -Dmaven.test.failure.ignore=true'
@@ -33,15 +33,15 @@ pipeline {
       post {
         always {
           // Publicar resultados de pruebas JUnit
-          junit 'LuminAV/LuminAV_backend/target/surefire-reports/*.xml'
+          junit 'LuminAVbackend/target/surefire-reports/*.xml'
         }
       }
     }
 
     stage('Frontend: Test (opcional)') {
-      when { expression { fileExists('LuminAV/LuminAVfrontend/package.json') } }
+      when { expression { fileExists('LuminAVfrontend/package.json') } }
       steps {
-        dir('LuminAV/LuminAV_frontend') {
+        dir('LuminAVfrontend') {
           echo '🧪 Ejecutando pruebas del frontend (Vitest)...'
           bat 'npm ci'
           bat 'npm run test -- --run || echo "⚠️ No se encontraron pruebas o se omitieron"'
@@ -61,14 +61,14 @@ pipeline {
           """
 
           // Backend
-          dir('LuminAV/LuminAV_backend') {
+          dir('LuminAVbackend') {
             echo '🛠️ Construyendo imagen del backend...'
             bat "docker build -t %BACKEND_IMG%:%VERSION% ."
             bat "docker push %BACKEND_IMG%:%VERSION%"
           }
 
           // Frontend
-          dir('LuminAV/LuminAV_frontend') {
+          dir('LuminAVfrontend') {
             echo '🛠️ Construyendo imagen del frontend...'
             bat "docker build -t %FRONTEND_IMG%:%VERSION% ."
             bat "docker push %FRONTEND_IMG%:%VERSION%"
