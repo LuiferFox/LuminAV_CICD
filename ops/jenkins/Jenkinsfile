@@ -24,7 +24,7 @@ pipeline {
 
     stage('Backend: Test') {
       steps {
-        dir('LuminAV/LuminAV_backend') {
+        dir('LuminAV/LuminAVbackend') {
           echo '🧪 Ejecutando pruebas del backend (JUnit)...'
           // Limpia, compila y prueba usando el POM
           bat 'mvn -B -q clean test -Dmaven.test.failure.ignore=true'
@@ -39,7 +39,7 @@ pipeline {
     }
 
     stage('Frontend: Test (opcional)') {
-      when { expression { fileExists('LuminAV/LuminAV_frontend/package.json') } }
+      when { expression { fileExists('LuminAV/LuminAVfrontend/package.json') } }
       steps {
         dir('LuminAV/LuminAV_frontend') {
           echo '🧪 Ejecutando pruebas del frontend (Vitest)...'
