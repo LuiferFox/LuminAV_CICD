@@ -27,7 +27,8 @@ pipeline {
         dir('LuminAVbackend') {
           echo '🧪 Ejecutando pruebas del backend (JUnit)...'
           // Limpia, compila y prueba usando el POM
-          bat 'mvn -B -q clean test -Dmaven.test.failure.ignore=true'
+         bat 'mvn -B -q clean package -Dmaven.test.failure.ignore=true'
+
         }
       }
       post {
