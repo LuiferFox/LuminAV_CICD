@@ -49,6 +49,15 @@ pipeline {
         }
       }
     }
+    stage('Frontend: Build') {
+  when { expression { fileExists('LuminAVfrontend/package.json') } }
+  steps {
+    dir('LuminAVfrontend') {
+      echo '🏗️ Compilando el frontend para producción...'
+      bat 'npm run build'
+    }
+  }
+}
 
     stage('Docker Build & Push') {
       steps {
